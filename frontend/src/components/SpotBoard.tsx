@@ -1,10 +1,11 @@
 import { useState } from "react";
-import type { IntelSnapshot, SpotPrice, VolumeInstrumentForecast } from "../types";
+import type { IntelSnapshot, MLInstrumentSignal, SpotPrice, VolumeInstrumentForecast } from "../types";
 import { useSpotPrices } from "../hooks/useSpotPrices";
 import { useWatchlist } from "../hooks/useWatchlist";
 import { useAlerts } from "../hooks/useAlerts";
 import { useIntel } from "../hooks/useIntel";
 import { useForecast } from "../hooks/useForecast";
+import { useSignals } from "../hooks/useSignals";
 import { InstrumentRow } from "./InstrumentRow";
 import { AlertPanel } from "./AlertPanel";
 import { QuickConvert } from "./QuickConvert";
@@ -22,6 +23,7 @@ interface BoardTableProps {
   onAlertClick: (id: number) => void;
   snapshotMap: Record<number, IntelSnapshot>;
   forecastMap: Record<number, VolumeInstrumentForecast>;
+  signalMap: Record<number, MLInstrumentSignal>;
 }
 
 function BoardTable({
@@ -32,6 +34,7 @@ function BoardTable({
   onAlertClick,
   snapshotMap,
   forecastMap,
+  signalMap,
 }: BoardTableProps) {
   if (items.length === 0) return null;
   return (
@@ -62,6 +65,7 @@ function BoardTable({
               intel={snapshotMap[spot.instrument_id] ?? null}
               colCount={COL_COUNT}
               volForecast={forecastMap[spot.instrument_id] ?? null}
+              mlSignal={signalMap[spot.instrument_id] ?? null}
             />
           ))}
         </tbody>
@@ -77,6 +81,7 @@ export function SpotBoard() {
     useAlerts(data);
   const { intel } = useIntel();
   const { forecast } = useForecast();
+  const { signals } = useSignals();
 
   const [showWatchlist, setShowWatchlist] = useState(false);
   const [showAlertPanel, setShowAlertPanel] = useState(false);
@@ -96,6 +101,7 @@ export function SpotBoard() {
   const allInstruments = [...data.fx, ...data.crypto];
   const snapshotMap: Record<number, IntelSnapshot> = intel?.snapshots ?? {};
   const forecastMap: Record<number, VolumeInstrumentForecast> = forecast?.instruments ?? {};
+  const signalMap: Record<number, MLInstrumentSignal> = (signals as Record<number, MLInstrumentSignal>) ?? {};
 
   const fxItems = showWatchlist
     ? data.fx.filter((s) => starred.has(s.instrument_id))
@@ -189,6 +195,7 @@ export function SpotBoard() {
           onAlertClick={handleAlertClick}
           snapshotMap={snapshotMap}
           forecastMap={{}}
+          signalMap={signalMap}
         />
         <BoardTable
           title="Crypto"
@@ -198,6 +205,7 @@ export function SpotBoard() {
           onAlertClick={handleAlertClick}
           snapshotMap={snapshotMap}
           forecastMap={forecastMap}
+          signalMap={signalMap}
         />
       </div>
 

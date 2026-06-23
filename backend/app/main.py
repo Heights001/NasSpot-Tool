@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routes import health, spot, intel, forecast
+from .routes import health, spot, intel, forecast, signals
 
 app = FastAPI(title="NasSpot API", version="0.1.0")
 
@@ -18,3 +18,4 @@ app.include_router(health.router)
 app.include_router(spot.router)
 app.include_router(intel.router)
 app.include_router(forecast.router)
+app.include_router(signals.router)

@@ -492,11 +492,24 @@ body {
 
 .intel-drawer {
   display: flex;
+  flex-direction: column;
   gap: 0;
   background: var(--surface2);
   border-top: 1px solid var(--border);
-  padding: 8px 0 8px 28px;
+  padding: 12px 24px 12px 28px;
+}
+
+.intel-drawer--wide {
+  min-width: 0;
+}
+
+.intel-stats-row {
+  display: flex;
   flex-wrap: wrap;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 6px;
 }
 
 .intel-stat {
@@ -692,4 +705,123 @@ body {
   font-size: 10px;
   color: var(--text-dim);
   font-family: var(--mono);
+}
+
+/* ── Horizon / ML Direction Bars ── */
+
+.horizon-section {
+  padding: 4px 0 8px;
+}
+
+.horizon-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.horizon-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  height: 20px;
+}
+
+.horizon-label {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--text-dim);
+  width: 34px;
+  flex-shrink: 0;
+}
+
+.horizon-track {
+  position: relative;
+  flex: 1;
+  max-width: 260px;
+  height: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.horizon-center-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--text-dim);
+  opacity: 0.4;
+}
+
+.horizon-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.hbar--bull   { background: rgba(34, 197, 94, 0.7); }
+.hbar--bear   { background: rgba(239, 68, 68, 0.7); }
+.hbar--neutral { background: rgba(148, 163, 184, 0.4); }
+
+.horizon-signal {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.horizon-signal.hbar--bull   { color: var(--green); }
+.horizon-signal.hbar--bear   { color: var(--red); }
+.horizon-signal.hbar--neutral { color: var(--text-dim); }
+
+.horizon-pct {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--text-dim);
+  width: 46px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.conf-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.conf-dot--high { background: var(--green); }
+.conf-dot--med  { background: var(--yellow); }
+.conf-dot--low  { background: var(--text-dim); }
+
+.horizon-legend {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.horizon-peg {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+  padding: 4px 0;
+}
+
+.horizon-no-data {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
 }

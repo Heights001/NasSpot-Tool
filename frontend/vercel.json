@@ -7,6 +7,8 @@
     { "source": "/intel",           "destination": "https://nasspot-api-production.up.railway.app/intel" },
     { "source": "/intel/:path*",    "destination": "https://nasspot-api-production.up.railway.app/intel/:path*" },
     { "source": "/forecast",        "destination": "https://nasspot-api-production.up.railway.app/forecast" },
-    { "source": "/forecast/:path*", "destination": "https://nasspot-api-production.up.railway.app/forecast/:path*" }
+    { "source": "/forecast/:path*", "destination": "https://nasspot-api-production.up.railway.app/forecast/:path*" },
+    { "source": "/signals",         "destination": "https://nasspot-api-production.up.railway.app/signals" },
+    { "source": "/signals/:path*",  "destination": "https://nasspot-api-production.up.railway.app/signals/:path*" }
   ]
 }

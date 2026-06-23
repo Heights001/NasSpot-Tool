@@ -89,6 +89,20 @@ export interface ForecastResponse {
   instruments: Record<number, VolumeInstrumentForecast>;
 }
 
+export interface MLHorizonPrediction {
+  prob_up: number;
+  signal: "bullish" | "bearish" | "neutral";
+  confidence: "high" | "medium" | "low";
+}
+
+export interface MLInstrumentSignal {
+  symbol: string;
+  is_peg: boolean;
+  predictions: Record<number, MLHorizonPrediction>;  // keyed by horizon_minutes
+}
+
+export type SignalsResponse = Record<number, MLInstrumentSignal>;  // keyed by instrument_id
+
 export interface Alert {
   id: string;
   instrument_id: number;

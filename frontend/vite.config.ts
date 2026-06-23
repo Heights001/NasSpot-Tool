@@ -9,6 +9,7 @@ export default defineConfig({
       "/health": "http://localhost:8001",
       "/intel": "http://localhost:8001",
       "/forecast": "http://localhost:8001",
+      "/signals": "http://localhost:8001",
     },
   },
 });

@@ -1,9 +1,10 @@
 import { useState } from "react";
-import type { IntelSnapshot, SpotPrice, VolumeInstrumentForecast } from "../types";
+import type { IntelSnapshot, MLInstrumentSignal, SpotPrice, VolumeInstrumentForecast } from "../types";
 import { FreshnessTag } from "./FreshnessTag";
 import { RegimeBadge } from "./RegimeBadge";
 import { ForecastSparkline } from "./ForecastSparkline";
 import SignalBadge from "./SignalBadge";
+import HorizonBar from "./HorizonBar";
 
 interface Props {
   spot: SpotPrice;
@@ -13,6 +14,7 @@ interface Props {
   intel: IntelSnapshot | null;
   colCount: number;
   volForecast: VolumeInstrumentForecast | null;
+  mlSignal: MLInstrumentSignal | null;
 }
 
 function formatPrice(price: string | null, precision: number): string {
@@ -50,9 +52,10 @@ export function InstrumentRow({
   intel,
   colCount,
   volForecast,
+  mlSignal,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
-  const hasDrawer = !!(intel || volForecast);
+  const hasDrawer = !!(intel || volForecast || mlSignal);
   const c1h = formatChange(spot.change_1h);
   const c24h = formatChange(spot.change_24h);
   const c7d = formatChange(spot.change_7d);
@@ -101,9 +104,16 @@ export function InstrumentRow({
       {expanded && hasDrawer && (
         <tr className="intel-drawer-row">
           <td colSpan={colCount}>
-            <div className="intel-drawer">
+            <div className="intel-drawer intel-drawer--wide">
+              {/* ML direction forecast — top and prominent */}
+              {mlSignal && <HorizonBar signal={mlSignal} />}
+
+              {/* TA signals */}
+              {intel && <SignalBadge snap={intel} />}
+
+              {/* Statistical stats row */}
               {intel && (
-                <>
+                <div className="intel-stats-row">
                   <div className="intel-stat">
                     <span className="intel-label">RV 30d</span>
                     <span className="intel-val">{fmt(intel.rv_30d, 4)}</span>
@@ -112,11 +122,8 @@ export function InstrumentRow({
                     <span className="intel-label">Z-Score</span>
                     <span
                       className={`intel-val${
-                        intel.z_score
-                          ? Math.abs(parseFloat(intel.z_score)) > 2
-                            ? " intel-val--alert"
-                            : ""
-                          : ""
+                        intel.z_score && Math.abs(parseFloat(intel.z_score)) > 2
+                          ? " intel-val--alert" : ""
                       }`}
                     >
                       {fmt(intel.z_score, 2)}
@@ -136,9 +143,10 @@ export function InstrumentRow({
                     <span className="intel-label">Samples</span>
                     <span className="intel-val">{intel.sample_count ?? "—"}</span>
                   </div>
-                  <SignalBadge snap={intel} />
-                </>
+                </div>
               )}
+
+              {/* Volume forecast sparkline */}
               {volForecast && (
                 <div className="intel-stat intel-stat--wide">
                   <ForecastSparkline data={volForecast} />
