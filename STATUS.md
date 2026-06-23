@@ -1,7 +1,16 @@
 # NasSpot — STATUS.md
 
-**Last updated:** 2026-06-22  
-**Phase:** M4 complete — all milestones done; Railway/Vercel deploy is next
+**Last updated:** 2026-06-23  
+**Phase:** SHIPPED — M1–M4 complete, deployed to Railway + Vercel
+
+**Production URLs:**
+- Frontend: https://nasspottool-v1.vercel.app
+- Backend API: https://nasspot-api-production.up.railway.app
+- GitHub: https://github.com/Heights001/NasSpot-Tool
+
+**GH Actions secrets required** (Settings → Secrets → Actions in the GitHub repo):
+- `DATABASE_URL` — same Neon URL as Railway env var
+- `COINGECKO_DEMO_KEY` — same value as Railway env var
 
 ---
 
