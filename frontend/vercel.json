@@ -1,8 +1,12 @@
 {
+  "trailingSlash": false,
   "rewrites": [
     { "source": "/health",          "destination": "https://nasspot-api-production.up.railway.app/health" },
+    { "source": "/spot",            "destination": "https://nasspot-api-production.up.railway.app/spot" },
     { "source": "/spot/:path*",     "destination": "https://nasspot-api-production.up.railway.app/spot/:path*" },
+    { "source": "/intel",           "destination": "https://nasspot-api-production.up.railway.app/intel" },
     { "source": "/intel/:path*",    "destination": "https://nasspot-api-production.up.railway.app/intel/:path*" },
+    { "source": "/forecast",        "destination": "https://nasspot-api-production.up.railway.app/forecast" },
     { "source": "/forecast/:path*", "destination": "https://nasspot-api-production.up.railway.app/forecast/:path*" }
   ]
 }
