@@ -1,4 +1,3 @@
-import React from "react";
 
 const REGIME_COLORS: Record<string, string> = {
   low: "#4caf50",

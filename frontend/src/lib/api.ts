@@ -1,4 +1,5 @@
-const BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? "";
 
 export async function fetchBoard() {
   const res = await fetch(`${BASE}/spot`);

@@ -106,12 +106,6 @@ export function SpotBoard() {
 
   const starCount = starred.size;
 
-  function closeAllPanels() {
-    setShowAlertPanel(false);
-    setShowConvert(false);
-    setShowCorrelation(false);
-  }
-
   function handleAlertClick(id: number) {
     setAlertPreselect(id);
     setShowAlertPanel(true);

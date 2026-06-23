@@ -1,4 +1,4 @@
-import type { VolumeForecastHour, VolumeInstrumentForecast } from "../types";
+import type { VolumeInstrumentForecast } from "../types";
 
 const W = 240;
 const H = 44;
