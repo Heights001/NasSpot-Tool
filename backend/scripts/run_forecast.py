@@ -25,10 +25,10 @@ logger = logging.getLogger("run_forecast")
 
 
 async def main() -> None:
-    from app.database import async_session
+    from app.database import SessionLocal
     from app.services.volume_forecast import seed_volume_history, run_volume_forecast
 
-    async with async_session() as db:
+    async with SessionLocal() as db:
         logger.info("Seeding volume history...")
         await seed_volume_history(db)
         logger.info("Running seasonal quantile model...")

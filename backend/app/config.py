@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     database_url: str
-    twelvedata_api_key: str
+    twelvedata_api_key: str = ""
     coingecko_demo_key: str = ""
     fx_ttl_seconds: int = 60
     crypto_ttl_seconds: int = 30
