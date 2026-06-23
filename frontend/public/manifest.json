@@ -1,0 +1,16 @@
+{
+  "name": "NasSpot",
+  "short_name": "NasSpot",
+  "description": "Spot-price truth and descriptive market intelligence for FX & crypto",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

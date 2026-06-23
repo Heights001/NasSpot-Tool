@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Environment files (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Alembic local state (not needed in CI)
+backend/alembic/__pycache__/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.local
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Claude Code session memory (local only)
+.claude/
