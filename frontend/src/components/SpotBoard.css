@@ -639,3 +639,57 @@ body {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* ── TA Signal Badge ── */
+
+.signal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0 2px;
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+  width: 100%;
+  grid-column: 1 / -1;
+}
+
+.signal-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.signal--long    { background: rgba(34, 197, 94, 0.15);  color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+.signal--short   { background: rgba(239, 68, 68, 0.15);  color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+.signal--neutral { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148,163,184,0.25); }
+.signal--suppressed { background: rgba(234, 179, 8, 0.1); color: #eab308; border: 1px solid rgba(234,179,8,0.25); }
+
+.signal-details {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.signal-pill {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--text-dim);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+
+.signal-pill.sma-bullish { color: var(--green); }
+.signal-pill.sma-bearish { color: var(--red); }
+
+.signal-reasoning {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}

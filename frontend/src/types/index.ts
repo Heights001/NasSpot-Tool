@@ -39,6 +39,11 @@ export interface IntelSnapshot {
   z_score: string | null;
   price_pctile_30d: string | null;
   spread_bps: string | null;
+  rsi_14: string | null;
+  bb_pct_b: string | null;
+  sma_trend: "bullish" | "bearish" | null;
+  ta_composite: "lean_long" | "lean_short" | "neutral" | "suppressed" | null;
+  ta_reasoning: string | null;
 }
 
 export interface Correlation {

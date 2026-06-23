@@ -17,6 +17,11 @@ class SnapshotSchema(BaseModel):
     z_score: Optional[Decimal]
     price_pctile_30d: Optional[Decimal]
     spread_bps: Optional[Decimal]
+    rsi_14: Optional[Decimal]
+    bb_pct_b: Optional[Decimal]
+    sma_trend: Optional[str]
+    ta_composite: Optional[str]
+    ta_reasoning: Optional[str]
 
     model_config = {"from_attributes": True}
 

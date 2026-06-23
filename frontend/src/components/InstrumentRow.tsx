@@ -3,6 +3,7 @@ import type { IntelSnapshot, SpotPrice, VolumeInstrumentForecast } from "../type
 import { FreshnessTag } from "./FreshnessTag";
 import { RegimeBadge } from "./RegimeBadge";
 import { ForecastSparkline } from "./ForecastSparkline";
+import SignalBadge from "./SignalBadge";
 
 interface Props {
   spot: SpotPrice;
@@ -135,6 +136,7 @@ export function InstrumentRow({
                     <span className="intel-label">Samples</span>
                     <span className="intel-val">{intel.sample_count ?? "—"}</span>
                   </div>
+                  <SignalBadge snap={intel} />
                 </>
               )}
               {volForecast && (

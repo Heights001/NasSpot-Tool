@@ -18,6 +18,11 @@ class IntelSnapshot(Base):
     z_score = Column(Numeric(8, 4))
     price_pctile_30d = Column(Numeric(5, 2))
     spread_bps = Column(Numeric(10, 4))
+    rsi_14 = Column(Numeric(6, 2))
+    bb_pct_b = Column(Numeric(7, 4))
+    sma_trend = Column(String(10))
+    ta_composite = Column(String(20))
+    ta_reasoning = Column(String(300))
 
 
 class IntelCorrelation(Base):

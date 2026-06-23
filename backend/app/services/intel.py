@@ -15,6 +15,7 @@ from ..adapters.coinbase import fetch_coinbase_prices
 from ..models.instruments import Instrument
 from ..models.intel import IntelCorrelation, IntelSnapshot
 from ..models.latest_price import LatestPrice
+from . import ta as _ta
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +118,11 @@ async def refresh_intel(instruments: list[Instrument], db: AsyncSession) -> None
                 "z_score": None,
                 "price_pctile_30d": None,
                 "spread_bps": _spread_bps(lp),
+                "rsi_14": None,
+                "bb_pct_b": None,
+                "sma_trend": None,
+                "ta_composite": None,
+                "ta_reasoning": None,
             })
             continue
 
@@ -143,6 +149,11 @@ async def refresh_intel(instruments: list[Instrument], db: AsyncSession) -> None
             z = (current - price_mean) / price_stdev
             pctile = 100.0 * sum(1 for p in prices if p < current) / len(prices)
 
+        rsi_val = _ta.rsi(prices)
+        bb_val = _ta.bollinger_pct_b(prices)
+        trend = _ta.sma_trend(prices)
+        composite, reasoning = _ta.ta_composite(rsi_val, bb_val, trend, regime)
+
         snap_rows.append({
             "instrument_id": inst_id,
             "computed_at": now,
@@ -155,6 +166,11 @@ async def refresh_intel(instruments: list[Instrument], db: AsyncSession) -> None
             "z_score": Decimal(str(round(z, 4))) if z is not None else None,
             "price_pctile_30d": Decimal(str(round(pctile, 2))) if pctile is not None else None,
             "spread_bps": _spread_bps(lp),
+            "rsi_14": Decimal(str(rsi_val)) if rsi_val is not None else None,
+            "bb_pct_b": Decimal(str(bb_val)) if bb_val is not None else None,
+            "sma_trend": trend,
+            "ta_composite": composite,
+            "ta_reasoning": reasoning,
         })
 
     if snap_rows:
@@ -164,7 +180,8 @@ async def refresh_intel(instruments: list[Instrument], db: AsyncSession) -> None
             set_={c: ins.excluded[c]
                   for c in ("computed_at", "window_days", "sample_count",
                              "rv_30d", "rv_regime", "price_mean_30d",
-                             "price_stdev_30d", "z_score", "price_pctile_30d", "spread_bps")},
+                             "price_stdev_30d", "z_score", "price_pctile_30d", "spread_bps",
+                             "rsi_14", "bb_pct_b", "sma_trend", "ta_composite", "ta_reasoning")},
         )
         await db.execute(upsert)
 
@@ -297,6 +314,11 @@ async def get_intel_response(instruments: list[Instrument], db: AsyncSession) ->
             "z_score": snap.z_score,
             "price_pctile_30d": snap.price_pctile_30d,
             "spread_bps": snap.spread_bps,
+            "rsi_14": snap.rsi_14,
+            "bb_pct_b": snap.bb_pct_b,
+            "sma_trend": snap.sma_trend,
+            "ta_composite": snap.ta_composite,
+            "ta_reasoning": snap.ta_reasoning,
         }
 
     # Build correlations list with symbols
