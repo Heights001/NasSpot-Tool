@@ -82,6 +82,7 @@ export interface VolumeInstrumentForecast {
   current_volume: number | null;
   current_activity: "busy" | "typical" | "quiet" | null;
   forecast: VolumeForecastHour[];
+  short_term_vol: { "15": number; "30": number; "60": number } | null;
 }
 
 export interface ForecastResponse {

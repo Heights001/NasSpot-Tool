@@ -621,7 +621,7 @@ body {
 .forecast-sparkline {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   padding: 2px 0;
 }
 
@@ -632,17 +632,17 @@ body {
 }
 
 .activity-badge {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.forecast-current-vol {
-  font-size: 11px;
-  font-family: var(--mono);
+.forecast-subtext {
+  font-size: 10px;
   color: var(--text-dim);
   margin-left: auto;
+  font-family: var(--mono);
 }
 
 .forecast-svg {
@@ -650,13 +650,55 @@ body {
   overflow: visible;
 }
 
-.forecast-labels {
+.forecast-svg-chart {
+  display: block;
+  overflow: visible;
+  margin-top: 2px;
+}
+
+/* ── Vol bar rows ── */
+
+.vol-bars {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vol-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vol-bar-horizon {
   font-size: 10px;
-  color: var(--text-dim);
   font-family: var(--mono);
-  width: 240px;
+  color: var(--text-dim);
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.vol-bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--surface2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.vol-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.vol-bar-val {
+  font-size: 10px;
+  font-family: var(--mono);
+  font-weight: 600;
+  width: 42px;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 /* ── Disabled header btn ── */

@@ -16,79 +16,64 @@ function ConfidenceDot({ level }: { level: string }) {
   return <span className={cls} title={`Confidence: ${level}`} />;
 }
 
-// ── Chart view — line chart ───────────────────────────────────────────────────
+// ── Chart view — semicircle gauges ───────────────────────────────────────────
 
 function HorizonChart({ preds }: { preds: Record<number, MLHorizonPrediction> }) {
-  const W = 280, H = 110;
-  const PAD = { top: 14, right: 16, bottom: 28, left: 36 };
-  const innerW = W - PAD.left - PAD.right;
-  const innerH = H - PAD.top - PAD.bottom;
-  const neutralY = PAD.top + 0.5 * innerH;
-
-  const dim = "var(--text-dim)";
-  const brd = "var(--border)";
-
-  const points = HORIZONS.map((h, i) => {
-    const p = preds[h];
-    const prob = p ? p.prob_up : 0.5;
-    const x = PAD.left + (i / (HORIZONS.length - 1)) * innerW;
-    const y = PAD.top + (1 - prob) * innerH;
-    return { x, y, prob, h, p };
-  }).filter(pt => pt.p);
-
-  if (points.length < 2) return null;
-
-  const linePoints = points.map(pt => `${pt.x},${pt.y}`).join(" ");
-  const areaPath =
-    `M ${points[0].x},${neutralY} ` +
-    points.map(pt => `L ${pt.x},${pt.y}`).join(" ") +
-    ` L ${points[points.length - 1].x},${neutralY} Z`;
-
-  const avgProb = points.reduce((s, p) => s + p.prob, 0) / points.length;
-  const fillCol  = avgProb > 0.52 ? "rgba(34,197,94,0.15)" : avgProb < 0.48 ? "rgba(239,68,68,0.15)" : "rgba(148,163,184,0.10)";
-  const lineCol  = avgProb > 0.52 ? "var(--green)" : avgProb < 0.48 ? "var(--red)" : "#94a3b8";
+  const W = 280, H = 92;
+  const R = 36, CY = 60;
+  const CXS = [50, 140, 230];
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="horizon-chart-svg">
-      {/* Y-axis grid + labels */}
-      {[0, 0.5, 1].map(t => {
-        const y = PAD.top + (1 - t) * innerH;
+      {HORIZONS.map((h, i) => {
+        const p = preds[h];
+        if (!p) return null;
+
+        const prob = Math.min(Math.max(p.prob_up, 0.01), 0.99);
+        const cx   = CXS[i];
+        const col  = p.signal === "bullish" ? "var(--green)"
+                   : p.signal === "bearish" ? "var(--red)"
+                   : "#94a3b8";
+        const pct  = Math.round(p.prob_up * 100);
+
+        // Needle angle: θ=π at prob=0 (left), θ=0 at prob=1 (right)
+        const theta = Math.PI * (1 - prob);
+        const nx = cx + R * Math.cos(theta);
+        const ny = CY - R * Math.sin(theta);
+
+        // Full track arc (upper semicircle, sweep=0 = counterclockwise in screen space = upper)
+        const track = `M ${cx - R} ${CY} A ${R} ${R} 0 0 0 ${cx + R} ${CY}`;
+        // Fill arc from bearish end to needle (always ≤ 180°, large-arc=0)
+        const fill  = `M ${cx - R} ${CY} A ${R} ${R} 0 0 0 ${nx.toFixed(2)} ${ny.toFixed(2)}`;
+
         return (
-          <g key={t}>
-            <line x1={PAD.left} y1={y} x2={PAD.left + innerW} y2={y}
-              style={{ stroke: t === 0.5 ? brd : "var(--surface2)" }}
-              strokeWidth={t === 0.5 ? 1 : 0.5}
-              strokeDasharray={t === 0.5 ? "3 3" : undefined} />
-            <text x={PAD.left - 5} y={y + 3.5} textAnchor="end"
-              fontSize={8} style={{ fill: dim }}>{`${Math.round(t * 100)}%`}</text>
+          <g key={h}>
+            {/* Track */}
+            <path d={track} fill="none" style={{ stroke: "var(--surface2)" }}
+              strokeWidth={7} strokeLinecap="round" />
+            {/* Coloured fill */}
+            <path d={fill} fill="none" style={{ stroke: col }}
+              strokeWidth={7} strokeLinecap="round" opacity={0.9} />
+            {/* 50% tick at top */}
+            <line x1={cx} y1={CY - R - 2} x2={cx} y2={CY - R + 5}
+              style={{ stroke: "var(--border)" }} strokeWidth={1.5} />
+            {/* Needle */}
+            <line x1={cx} y1={CY} x2={nx.toFixed(2)} y2={ny.toFixed(2)}
+              style={{ stroke: "var(--text)" }} strokeWidth={1.5} strokeLinecap="round" />
+            {/* Pivot */}
+            <circle cx={cx} cy={CY} r={3.5} style={{ fill: col }} />
+            {/* % label */}
+            <text x={cx} y={CY + 15} textAnchor="middle" fontSize={10}
+              style={{ fill: col }} fontWeight={700}>{pct}%</text>
+            {/* Horizon label */}
+            <text x={cx} y={CY + 27} textAnchor="middle" fontSize={8.5}
+              style={{ fill: "var(--text-dim)" }}>{HORIZON_LABEL[h]}</text>
           </g>
         );
       })}
-
-      {/* Filled area */}
-      <path d={areaPath} fill={fillCol} />
-
-      {/* Line */}
-      <polyline points={linePoints} fill="none"
-        style={{ stroke: lineCol }} strokeWidth={1.5} strokeLinejoin="round" />
-
-      {/* Data points + x labels */}
-      {points.map(pt => {
-        const isBull = pt.p?.signal === "bullish";
-        const isBear = pt.p?.signal === "bearish";
-        const dotCol = isBull ? "var(--green)" : isBear ? "var(--red)" : "#94a3b8";
-        const pct = Math.round(pt.prob * 100);
-        const labelY = pt.y > neutralY ? pt.y - 6 : pt.y + 12;
-        return (
-          <g key={pt.h}>
-            <circle cx={pt.x} cy={pt.y} r={3.5} style={{ fill: dotCol }} />
-            <text x={pt.x} y={labelY} textAnchor="middle"
-              fontSize={8} style={{ fill: dotCol }} fontWeight={600}>{pct}%</text>
-            <text x={pt.x} y={H - 6} textAnchor="middle"
-              fontSize={8} style={{ fill: dim }}>{HORIZON_LABEL[pt.h]}</text>
-          </g>
-        );
-      })}
+      {/* Axis hints */}
+      <text x={4}     y={CY + 4} textAnchor="start" fontSize={7} style={{ fill: "var(--text-dim)" }}>BEAR</text>
+      <text x={W - 4} y={CY + 4} textAnchor="end"   fontSize={7} style={{ fill: "var(--text-dim)" }}>BULL</text>
     </svg>
   );
 }

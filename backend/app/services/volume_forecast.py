@@ -202,6 +202,42 @@ async def run_volume_forecast(db: AsyncSession) -> None:
             await db.rollback()
 
 
+async def _short_term_vol(
+    db: AsyncSession,
+    instrument_ids: list[int],
+) -> "dict[int, dict[int, float]]":
+    """Avg volume-per-5min bar for the last 15m/30m/60m windows."""
+    from ..models.intraday import PriceIntraday
+
+    if not instrument_ids:
+        return {}
+
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=2)
+    result = await db.execute(
+        select(PriceIntraday.instrument_id, PriceIntraday.volume)
+        .where(
+            PriceIntraday.instrument_id.in_(instrument_ids),
+            PriceIntraday.ts >= cutoff,
+            PriceIntraday.volume.isnot(None),
+            PriceIntraday.volume > 0,
+        )
+        .order_by(PriceIntraday.instrument_id, PriceIntraday.ts.desc())
+    )
+    rows = result.all()
+
+    by_inst: dict[int, list[float]] = defaultdict(list)
+    for r in rows:
+        by_inst[r.instrument_id].append(float(r.volume))
+
+    out: dict[int, dict[int, float]] = {}
+    for iid, vols in by_inst.items():
+        def avg(n: int) -> float:
+            subset = vols[:n]
+            return sum(subset) / len(subset) if subset else 0.0
+        out[iid] = {15: round(avg(3), 4), 30: round(avg(6), 4), 60: round(avg(12), 4)}
+    return out
+
+
 async def get_forecast_response(db: AsyncSession) -> dict:
     """Return the latest 24h forecast for all crypto instruments."""
     # Latest generated_at per instrument
@@ -285,5 +321,15 @@ async def get_forecast_response(db: AsyncSession) -> dict:
                 inst_data["current_activity"] = "quiet"
             else:
                 inst_data["current_activity"] = "typical"
+
+    # Attach short-term vol (avg vol/bar) from intraday bars for crypto instruments
+    crypto_ids = list(by_inst.keys())
+    if crypto_ids:
+        st = await _short_term_vol(db, crypto_ids)
+        for iid in by_inst:
+            sv = st.get(iid)
+            by_inst[iid]["short_term_vol"] = (
+                {"15": sv[15], "30": sv[30], "60": sv[60]} if sv else None
+            )
 
     return {"generated_at": generated_at, "instruments": by_inst}
