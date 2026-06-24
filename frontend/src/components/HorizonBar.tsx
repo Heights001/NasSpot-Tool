@@ -16,55 +16,76 @@ function ConfidenceDot({ level }: { level: string }) {
   return <span className={cls} title={`Confidence: ${level}`} />;
 }
 
-// ── Chart view — diverging bar ────────────────────────────────────────────────
+// ── Chart view — line chart ───────────────────────────────────────────────────
 
 function HorizonChart({ preds }: { preds: Record<number, MLHorizonPrediction> }) {
-  const W = 280, H = 96;
-  const PAD = { top: 8, right: 52, bottom: 22, left: 40 };
+  const W = 280, H = 110;
+  const PAD = { top: 14, right: 16, bottom: 28, left: 36 };
   const innerW = W - PAD.left - PAD.right;
-  const BAR_H = 16, BAR_GAP = 8;
-  const centerX = PAD.left + innerW / 2;
+  const innerH = H - PAD.top - PAD.bottom;
+  const neutralY = PAD.top + 0.5 * innerH;
 
-  const dim  = "var(--text-dim)";
-  const brd  = "var(--border)";
-  const surf = "var(--surface2)";
+  const dim = "var(--text-dim)";
+  const brd = "var(--border)";
+
+  const points = HORIZONS.map((h, i) => {
+    const p = preds[h];
+    const prob = p ? p.prob_up : 0.5;
+    const x = PAD.left + (i / (HORIZONS.length - 1)) * innerW;
+    const y = PAD.top + (1 - prob) * innerH;
+    return { x, y, prob, h, p };
+  }).filter(pt => pt.p);
+
+  if (points.length < 2) return null;
+
+  const linePoints = points.map(pt => `${pt.x},${pt.y}`).join(" ");
+  const areaPath =
+    `M ${points[0].x},${neutralY} ` +
+    points.map(pt => `L ${pt.x},${pt.y}`).join(" ") +
+    ` L ${points[points.length - 1].x},${neutralY} Z`;
+
+  const avgProb = points.reduce((s, p) => s + p.prob, 0) / points.length;
+  const fillCol  = avgProb > 0.52 ? "rgba(34,197,94,0.15)" : avgProb < 0.48 ? "rgba(239,68,68,0.15)" : "rgba(148,163,184,0.10)";
+  const lineCol  = avgProb > 0.52 ? "var(--green)" : avgProb < 0.48 ? "var(--red)" : "#94a3b8";
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="horizon-chart-svg">
-      {/* Axis labels */}
-      <text x={PAD.left}      y={H - 5} textAnchor="middle" fontSize={8} style={{ fill: dim }}>BEAR</text>
-      <text x={centerX}       y={H - 5} textAnchor="middle" fontSize={8} style={{ fill: dim }}>50%</text>
-      <text x={W - PAD.right} y={H - 5} textAnchor="middle" fontSize={8} style={{ fill: dim }}>BULL</text>
-
-      {/* Center line */}
-      <line x1={centerX} y1={PAD.top} x2={centerX} y2={H - 16}
-        style={{ stroke: brd }} strokeWidth={1} strokeDasharray="3 2" />
-
-      {HORIZONS.map((h, i) => {
-        const p = preds[h];
-        if (!p) return null;
-
-        const prob   = p.prob_up;
-        const isBull = p.signal === "bullish";
-        const isBear = p.signal === "bearish";
-        const col    = isBull ? "var(--green)" : isBear ? "var(--red)" : "#94a3b8";
-        const pct    = Math.round(prob * 100);
-
-        const y     = PAD.top + i * (BAR_H + BAR_GAP);
-        const barW  = Math.abs(prob - 0.5) * innerW;
-        const barX  = prob >= 0.5 ? centerX : centerX - barW;
-        const lblX  = isBull ? barX + barW + 5 : barX - 5;
-        const lblAnchor = isBull ? "start" : "end";
-
+      {/* Y-axis grid + labels */}
+      {[0, 0.5, 1].map(t => {
+        const y = PAD.top + (1 - t) * innerH;
         return (
-          <g key={h}>
-            <rect x={PAD.left} y={y} width={innerW} height={BAR_H} style={{ fill: surf }} rx={2} />
-            <rect x={barX} y={y} width={Math.max(barW, 1)} height={BAR_H}
-              style={{ fill: col }} opacity={0.85} rx={2} />
-            <text x={PAD.left - 5} y={y + BAR_H / 2 + 4}
-              textAnchor="end" fontSize={9} style={{ fill: dim }}>{HORIZON_LABEL[h]}</text>
-            <text x={lblX} y={y + BAR_H / 2 + 4}
-              textAnchor={lblAnchor} fontSize={8.5} style={{ fill: col }} fontWeight={700}>{pct}%</text>
+          <g key={t}>
+            <line x1={PAD.left} y1={y} x2={PAD.left + innerW} y2={y}
+              style={{ stroke: t === 0.5 ? brd : "var(--surface2)" }}
+              strokeWidth={t === 0.5 ? 1 : 0.5}
+              strokeDasharray={t === 0.5 ? "3 3" : undefined} />
+            <text x={PAD.left - 5} y={y + 3.5} textAnchor="end"
+              fontSize={8} style={{ fill: dim }}>{`${Math.round(t * 100)}%`}</text>
+          </g>
+        );
+      })}
+
+      {/* Filled area */}
+      <path d={areaPath} fill={fillCol} />
+
+      {/* Line */}
+      <polyline points={linePoints} fill="none"
+        style={{ stroke: lineCol }} strokeWidth={1.5} strokeLinejoin="round" />
+
+      {/* Data points + x labels */}
+      {points.map(pt => {
+        const isBull = pt.p?.signal === "bullish";
+        const isBear = pt.p?.signal === "bearish";
+        const dotCol = isBull ? "var(--green)" : isBear ? "var(--red)" : "#94a3b8";
+        const pct = Math.round(pt.prob * 100);
+        const labelY = pt.y > neutralY ? pt.y - 6 : pt.y + 12;
+        return (
+          <g key={pt.h}>
+            <circle cx={pt.x} cy={pt.y} r={3.5} style={{ fill: dotCol }} />
+            <text x={pt.x} y={labelY} textAnchor="middle"
+              fontSize={8} style={{ fill: dotCol }} fontWeight={600}>{pct}%</text>
+            <text x={pt.x} y={H - 6} textAnchor="middle"
+              fontSize={8} style={{ fill: dim }}>{HORIZON_LABEL[pt.h]}</text>
           </g>
         );
       })}
