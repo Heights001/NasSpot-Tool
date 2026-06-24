@@ -6,6 +6,7 @@ import { useAlerts } from "../hooks/useAlerts";
 import { useIntel } from "../hooks/useIntel";
 import { useForecast } from "../hooks/useForecast";
 import { useSignals } from "../hooks/useSignals";
+import { useTheme } from "../hooks/useTheme";
 import { InstrumentRow } from "./InstrumentRow";
 import { AlertPanel } from "./AlertPanel";
 import { QuickConvert } from "./QuickConvert";
@@ -82,6 +83,7 @@ export function SpotBoard() {
   const { intel } = useIntel();
   const { forecast } = useForecast();
   const { signals } = useSignals();
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const [showWatchlist, setShowWatchlist] = useState(false);
   const [showAlertPanel, setShowAlertPanel] = useState(false);
@@ -130,6 +132,13 @@ export function SpotBoard() {
             Board as of {new Date(data.board_ts).toLocaleTimeString()}
           </span>
           <div className="header-actions">
+            <button
+              className="hdr-btn hdr-btn--theme"
+              onClick={toggleTheme}
+              title="Toggle light / dark mode"
+            >
+              {theme === "dark" ? "Light" : "Dark"}
+            </button>
             <button
               className={`hdr-btn${showWatchlist ? " hdr-btn--active" : ""}`}
               onClick={() => setShowWatchlist((v) => !v)}
