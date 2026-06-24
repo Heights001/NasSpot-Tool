@@ -825,3 +825,27 @@ body {
   color: var(--text-dim);
   font-style: italic;
 }
+
+/* ── Horizon view toggle ── */
+
+.horizon-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.horizon-view-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 13px;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: color 0.1s, border-color 0.1s;
+}
+.horizon-view-toggle:hover         { color: var(--text); border-color: #444; }
+.horizon-view-toggle--active       { color: var(--blue); border-color: var(--blue); }
+
+.horizon-chart-svg { display: block; overflow: visible; margin-top: 4px; }
