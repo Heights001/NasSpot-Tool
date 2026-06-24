@@ -16,64 +16,55 @@ function ConfidenceDot({ level }: { level: string }) {
   return <span className={cls} title={`Confidence: ${level}`} />;
 }
 
-// ── Chart view — semicircle gauges ───────────────────────────────────────────
+// ── Chart view — diverging bar ────────────────────────────────────────────────
 
 function HorizonChart({ preds }: { preds: Record<number, MLHorizonPrediction> }) {
-  const W = 280, H = 92;
-  const R = 36, CY = 60;
-  const CXS = [50, 140, 230];
+  const W = 280, H = 96;
+  const PAD = { top: 8, right: 52, bottom: 22, left: 40 };
+  const innerW = W - PAD.left - PAD.right;
+  const BAR_H = 16, BAR_GAP = 8;
+  const centerX = PAD.left + innerW / 2;
+
+  const dim  = "var(--text-dim)";
+  const brd  = "var(--border)";
+  const surf = "var(--surface2)";
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="horizon-chart-svg">
+      <text x={PAD.left}      y={H - 5} textAnchor="middle" fontSize={8} style={{ fill: dim }}>BEAR</text>
+      <text x={centerX}       y={H - 5} textAnchor="middle" fontSize={8} style={{ fill: dim }}>50%</text>
+      <text x={W - PAD.right} y={H - 5} textAnchor="middle" fontSize={8} style={{ fill: dim }}>BULL</text>
+
+      <line x1={centerX} y1={PAD.top} x2={centerX} y2={H - 16}
+        style={{ stroke: brd }} strokeWidth={1} strokeDasharray="3 2" />
+
       {HORIZONS.map((h, i) => {
         const p = preds[h];
         if (!p) return null;
 
-        const prob = Math.min(Math.max(p.prob_up, 0.01), 0.99);
-        const cx   = CXS[i];
-        const col  = p.signal === "bullish" ? "var(--green)"
-                   : p.signal === "bearish" ? "var(--red)"
-                   : "#94a3b8";
-        const pct  = Math.round(p.prob_up * 100);
-
-        // Needle angle: θ=π at prob=0 (left), θ=0 at prob=1 (right)
-        const theta = Math.PI * (1 - prob);
-        const nx = cx + R * Math.cos(theta);
-        const ny = CY - R * Math.sin(theta);
-
-        // Full track arc (upper semicircle, sweep=0 = counterclockwise in screen space = upper)
-        const track = `M ${cx - R} ${CY} A ${R} ${R} 0 0 0 ${cx + R} ${CY}`;
-        // Fill arc from bearish end to needle (always ≤ 180°, large-arc=0)
-        const fill  = `M ${cx - R} ${CY} A ${R} ${R} 0 0 0 ${nx.toFixed(2)} ${ny.toFixed(2)}`;
+        const prob      = p.prob_up;
+        const isBull    = p.signal === "bullish";
+        const isBear    = p.signal === "bearish";
+        const col       = isBull ? "var(--green)" : isBear ? "var(--red)" : "#94a3b8";
+        const pct       = Math.round(prob * 100);
+        const y         = PAD.top + i * (BAR_H + BAR_GAP);
+        const barW      = Math.abs(prob - 0.5) * innerW;
+        const barX      = prob >= 0.5 ? centerX : centerX - barW;
+        const lblX      = isBull ? barX + barW + 5 : barX - 5;
+        const lblAnchor = isBull ? "start" : "end";
 
         return (
           <g key={h}>
-            {/* Track */}
-            <path d={track} fill="none" style={{ stroke: "var(--surface2)" }}
-              strokeWidth={7} strokeLinecap="round" />
-            {/* Coloured fill */}
-            <path d={fill} fill="none" style={{ stroke: col }}
-              strokeWidth={7} strokeLinecap="round" opacity={0.9} />
-            {/* 50% tick at top */}
-            <line x1={cx} y1={CY - R - 2} x2={cx} y2={CY - R + 5}
-              style={{ stroke: "var(--border)" }} strokeWidth={1.5} />
-            {/* Needle */}
-            <line x1={cx} y1={CY} x2={nx.toFixed(2)} y2={ny.toFixed(2)}
-              style={{ stroke: "var(--text)" }} strokeWidth={1.5} strokeLinecap="round" />
-            {/* Pivot */}
-            <circle cx={cx} cy={CY} r={3.5} style={{ fill: col }} />
-            {/* % label */}
-            <text x={cx} y={CY + 15} textAnchor="middle" fontSize={10}
-              style={{ fill: col }} fontWeight={700}>{pct}%</text>
-            {/* Horizon label */}
-            <text x={cx} y={CY + 27} textAnchor="middle" fontSize={8.5}
-              style={{ fill: "var(--text-dim)" }}>{HORIZON_LABEL[h]}</text>
+            <rect x={PAD.left} y={y} width={innerW} height={BAR_H} style={{ fill: surf }} rx={2} />
+            <rect x={barX} y={y} width={Math.max(barW, 1)} height={BAR_H}
+              style={{ fill: col }} opacity={0.85} rx={2} />
+            <text x={PAD.left - 5} y={y + BAR_H / 2 + 4}
+              textAnchor="end" fontSize={9} style={{ fill: dim }}>{HORIZON_LABEL[h]}</text>
+            <text x={lblX} y={y + BAR_H / 2 + 4}
+              textAnchor={lblAnchor} fontSize={8.5} style={{ fill: col }} fontWeight={700}>{pct}%</text>
           </g>
         );
       })}
-      {/* Axis hints */}
-      <text x={4}     y={CY + 4} textAnchor="start" fontSize={7} style={{ fill: "var(--text-dim)" }}>BEAR</text>
-      <text x={W - 4} y={CY + 4} textAnchor="end"   fontSize={7} style={{ fill: "var(--text-dim)" }}>BULL</text>
     </svg>
   );
 }
