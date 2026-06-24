@@ -91,21 +91,39 @@ function VolBars({ vals, maxVal }: { vals: number[]; maxVal: number }) {
 
 // ── Hourly fallback sparkline (when intraday data unavailable) ────────────────
 
-const W_SPARK = 240, H_SPARK = 44, TOP_PAD = 4;
-const USABLE_H = H_SPARK - TOP_PAD;
-
 function HourlySparkline({ forecast, current_activity, current_volume }: {
   forecast: VolumeForecastHour[];
   current_activity: string | null;
   current_volume: number | null;
 }) {
+  const [chartMode, setChartMode] = useState(false);
+
   if (!forecast.length) return null;
-  const STEP  = W_SPARK / 24;
-  const BAR_W = Math.max(1, STEP - 1.5);
   const maxVol = Math.max(...forecast.map(f => f.p75));
   if (maxVol === 0) return null;
   const nowHour = new Date().getUTCHours();
-  const scaleY = (v: number) => TOP_PAD + USABLE_H - (v / maxVol) * USABLE_H;
+
+  // ── Compact sparkline ──
+  const W_S = 240, H_S = 44, TOP = 4, USE_H = H_S - TOP;
+  const STEP  = W_S / 24;
+  const BAR_W = Math.max(1, STEP - 1.5);
+  const scaleY = (v: number) => TOP + USE_H - (v / maxVol) * USE_H;
+
+  // ── Detailed chart ──
+  const W_C = 240, H_C = 88;
+  const PAD = { top: 10, right: 8, bottom: 20, left: 34 };
+  const innerW = W_C - PAD.left - PAD.right;
+  const innerH = H_C - PAD.top - PAD.bottom;
+  const scaleX = (i: number) => PAD.left + (i / (forecast.length - 1)) * innerW;
+  const scaleYC = (v: number) => PAD.top + innerH - (v / maxVol) * innerH;
+
+  const areaTop    = forecast.map((f, i) => `${i === 0 ? "M" : "L"} ${scaleX(i).toFixed(1)} ${scaleYC(f.p75).toFixed(1)}`).join(" ");
+  const areaBottom = [...forecast].reverse().map((f, i) => `L ${scaleX(forecast.length - 1 - i).toFixed(1)} ${scaleYC(f.p25).toFixed(1)}`).join(" ");
+  const areaPath   = `${areaTop} ${areaBottom} Z`;
+  const linePath   = forecast.map((f, i) => `${i === 0 ? "M" : "L"} ${scaleX(i).toFixed(1)} ${scaleYC(f.p50).toFixed(1)}`).join(" ");
+
+  const xTickIdxs  = [0, 5, 11, 17, 23];
+  const yTicks     = [0, 0.5, 1];
 
   return (
     <div className="forecast-sparkline">
@@ -119,25 +137,75 @@ function HourlySparkline({ forecast, current_activity, current_volume }: {
         {current_volume != null && (
           <span className="forecast-subtext">{fmtVol(current_volume)}</span>
         )}
+        <button
+          className={`horizon-view-toggle${chartMode ? " horizon-view-toggle--active" : ""}`}
+          onClick={() => setChartMode(v => !v)}
+          title={chartMode ? "Switch to sparkline" : "Switch to chart"}
+        >
+          {chartMode ? "≡" : "⌁"}
+        </button>
       </div>
-      <svg viewBox={`0 0 ${W_SPARK} ${H_SPARK}`} width={W_SPARK} height={H_SPARK} className="forecast-svg">
-        {forecast.map((f, i) => {
-          const x = i * STEP;
-          const isCurrent = new Date(f.ts).getUTCHours() === nowHour;
-          return (
-            <g key={i}>
-              <rect x={x} y={scaleY(f.p75)} width={BAR_W}
-                height={Math.max(1, scaleY(f.p25) - scaleY(f.p75))}
-                fill={isCurrent ? "rgba(59,130,246,0.25)" : "rgba(255,255,255,0.08)"} />
-              <rect x={x} y={scaleY(f.p50) - 1} width={BAR_W} height={3}
-                fill={isCurrent ? "#3b82f6" : "rgba(255,255,255,0.35)"} />
-            </g>
-          );
-        })}
-      </svg>
-      <div className="forecast-labels">
-        <span>+1h</span><span>+12h</span><span>+24h</span>
-      </div>
+
+      {!chartMode ? (
+        <>
+          <svg viewBox={`0 0 ${W_S} ${H_S}`} width={W_S} height={H_S} className="forecast-svg">
+            {forecast.map((f, i) => {
+              const x = i * STEP;
+              const isCurrent = new Date(f.ts).getUTCHours() === nowHour;
+              return (
+                <g key={i}>
+                  <rect x={x} y={scaleY(f.p75)} width={BAR_W}
+                    height={Math.max(1, scaleY(f.p25) - scaleY(f.p75))}
+                    fill={isCurrent ? "rgba(59,130,246,0.25)" : "rgba(255,255,255,0.08)"} />
+                  <rect x={x} y={scaleY(f.p50) - 1} width={BAR_W} height={3}
+                    fill={isCurrent ? "#3b82f6" : "rgba(255,255,255,0.35)"} />
+                </g>
+              );
+            })}
+          </svg>
+          <div className="forecast-labels">
+            <span>+1h</span><span>+12h</span><span>+24h</span>
+          </div>
+        </>
+      ) : (
+        <svg viewBox={`0 0 ${W_C} ${H_C}`} width={W_C} height={H_C} className="forecast-svg-chart">
+          {/* Y-axis grid + labels */}
+          {yTicks.map(t => {
+            const y = PAD.top + (1 - t) * innerH;
+            return (
+              <g key={t}>
+                <line x1={PAD.left} y1={y} x2={PAD.left + innerW} y2={y}
+                  style={{ stroke: "var(--border)" }} strokeWidth={0.5}
+                  strokeDasharray={t === 0.5 ? "3 2" : undefined} />
+                <text x={PAD.left - 4} y={y + 3.5} textAnchor="end"
+                  fontSize={7.5} style={{ fill: "var(--text-dim)" }}>
+                  {fmtVol(maxVol * t)}
+                </text>
+              </g>
+            );
+          })}
+          {/* p25–p75 band */}
+          <path d={areaPath} style={{ fill: "var(--blue)" }} opacity={0.1} />
+          {/* p50 line */}
+          <path d={linePath} fill="none" style={{ stroke: "var(--blue)" }}
+            strokeWidth={1.5} strokeLinejoin="round" />
+          {/* Current hour dot */}
+          {forecast.map((f, i) => {
+            if (new Date(f.ts).getUTCHours() !== nowHour) return null;
+            return (
+              <circle key={i} cx={scaleX(i)} cy={scaleYC(f.p50)} r={3}
+                style={{ fill: "var(--blue)" }} />
+            );
+          })}
+          {/* X-axis labels */}
+          {xTickIdxs.map(i => (
+            <text key={i} x={scaleX(i)} y={H_C - 4} textAnchor="middle"
+              fontSize={7.5} style={{ fill: "var(--text-dim)" }}>
+              +{i + 1}h
+            </text>
+          ))}
+        </svg>
+      )}
     </div>
   );
 }
