@@ -99,31 +99,36 @@ function HourlySparkline({ forecast, current_activity, current_volume }: {
   const [chartMode, setChartMode] = useState(false);
 
   if (!forecast.length) return null;
-  const maxVol = Math.max(...forecast.map(f => f.p75));
+  const maxVol  = Math.max(...forecast.map(f => f.p75));
   if (maxVol === 0) return null;
   const nowHour = new Date().getUTCHours();
 
-  // ── Compact sparkline ──
-  const W_S = 240, H_S = 44, TOP = 4, USE_H = H_S - TOP;
-  const STEP  = W_S / 24;
-  const BAR_W = Math.max(1, STEP - 1.5);
-  const scaleY = (v: number) => TOP + USE_H - (v / maxVol) * USE_H;
+  // ── Default: detailed line + band chart ──
+  const W = 240, H = 92;
+  const PAD = { top: 10, right: 8, bottom: 22, left: 36 };
+  const innerW = W - PAD.left - PAD.right;
+  const innerH = H - PAD.top - PAD.bottom;
+  const n      = forecast.length;
+  const scaleX  = (i: number) => PAD.left + (i / (n - 1)) * innerW;
+  const scaleY  = (v: number) => PAD.top + innerH - (v / maxVol) * innerH;
 
-  // ── Detailed chart ──
-  const W_C = 240, H_C = 88;
-  const PAD = { top: 10, right: 8, bottom: 20, left: 34 };
-  const innerW = W_C - PAD.left - PAD.right;
-  const innerH = H_C - PAD.top - PAD.bottom;
-  const scaleX = (i: number) => PAD.left + (i / (forecast.length - 1)) * innerW;
-  const scaleYC = (v: number) => PAD.top + innerH - (v / maxVol) * innerH;
-
-  const areaTop    = forecast.map((f, i) => `${i === 0 ? "M" : "L"} ${scaleX(i).toFixed(1)} ${scaleYC(f.p75).toFixed(1)}`).join(" ");
-  const areaBottom = [...forecast].reverse().map((f, i) => `L ${scaleX(forecast.length - 1 - i).toFixed(1)} ${scaleYC(f.p25).toFixed(1)}`).join(" ");
+  const areaTop    = forecast.map((f, i) => `${i === 0 ? "M" : "L"} ${scaleX(i).toFixed(1)} ${scaleY(f.p75).toFixed(1)}`).join(" ");
+  const areaBottom = [...forecast].reverse().map((f, i) => `L ${scaleX(n - 1 - i).toFixed(1)} ${scaleY(f.p25).toFixed(1)}`).join(" ");
   const areaPath   = `${areaTop} ${areaBottom} Z`;
-  const linePath   = forecast.map((f, i) => `${i === 0 ? "M" : "L"} ${scaleX(i).toFixed(1)} ${scaleYC(f.p50).toFixed(1)}`).join(" ");
-
-  const xTickIdxs  = [0, 5, 11, 17, 23];
+  const linePath   = forecast.map((f, i) => `${i === 0 ? "M" : "L"} ${scaleX(i).toFixed(1)} ${scaleY(f.p50).toFixed(1)}`).join(" ");
+  const xTicks     = [0, 5, 11, 17, 23];
   const yTicks     = [0, 0.5, 1];
+
+  // ── Toggle: diverging bar chart (each hour vs 24h average) ──
+  const W_D = 240, H_D = 148;
+  const PD  = { top: 8, right: 44, bottom: 14, left: 30 };
+  const iW  = W_D - PD.left - PD.right;
+  const iH  = H_D - PD.top - PD.bottom;
+  const BAR_H   = Math.floor(iH / n) - 1;
+  const centerX = PD.left + iW / 2;
+  const avg     = forecast.reduce((s, f) => s + f.p50, 0) / n;
+  const maxDev  = Math.max(...forecast.map(f => Math.abs(f.p50 - avg)), 1);
+  const labelIdxs = new Set([0, 5, 11, 17, 23]);
 
   return (
     <div className="forecast-sparkline">
@@ -140,36 +145,15 @@ function HourlySparkline({ forecast, current_activity, current_volume }: {
         <button
           className={`horizon-view-toggle${chartMode ? " horizon-view-toggle--active" : ""}`}
           onClick={() => setChartMode(v => !v)}
-          title={chartMode ? "Switch to sparkline" : "Switch to chart"}
+          title={chartMode ? "Switch to line chart" : "Switch to diverging chart"}
         >
           {chartMode ? "≡" : "⌁"}
         </button>
       </div>
 
       {!chartMode ? (
-        <>
-          <svg viewBox={`0 0 ${W_S} ${H_S}`} width={W_S} height={H_S} className="forecast-svg">
-            {forecast.map((f, i) => {
-              const x = i * STEP;
-              const isCurrent = new Date(f.ts).getUTCHours() === nowHour;
-              return (
-                <g key={i}>
-                  <rect x={x} y={scaleY(f.p75)} width={BAR_W}
-                    height={Math.max(1, scaleY(f.p25) - scaleY(f.p75))}
-                    fill={isCurrent ? "rgba(59,130,246,0.25)" : "rgba(255,255,255,0.08)"} />
-                  <rect x={x} y={scaleY(f.p50) - 1} width={BAR_W} height={3}
-                    fill={isCurrent ? "#3b82f6" : "rgba(255,255,255,0.35)"} />
-                </g>
-              );
-            })}
-          </svg>
-          <div className="forecast-labels">
-            <span>+1h</span><span>+12h</span><span>+24h</span>
-          </div>
-        </>
-      ) : (
-        <svg viewBox={`0 0 ${W_C} ${H_C}`} width={W_C} height={H_C} className="forecast-svg-chart">
-          {/* Y-axis grid + labels */}
+        /* Default: line + band */
+        <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="forecast-svg-chart">
           {yTicks.map(t => {
             const y = PAD.top + (1 - t) * innerH;
             return (
@@ -184,26 +168,51 @@ function HourlySparkline({ forecast, current_activity, current_volume }: {
               </g>
             );
           })}
-          {/* p25–p75 band */}
-          <path d={areaPath} style={{ fill: "var(--blue)" }} opacity={0.1} />
-          {/* p50 line */}
+          <path d={areaPath} style={{ fill: "var(--blue)" }} opacity={0.12} />
           <path d={linePath} fill="none" style={{ stroke: "var(--blue)" }}
             strokeWidth={1.5} strokeLinejoin="round" />
-          {/* Current hour dot */}
           {forecast.map((f, i) => {
             if (new Date(f.ts).getUTCHours() !== nowHour) return null;
+            return <circle key={i} cx={scaleX(i)} cy={scaleY(f.p50)} r={3.5}
+              style={{ fill: "var(--blue)" }} />;
+          })}
+          {xTicks.map(i => (
+            <text key={i} x={scaleX(i)} y={H - 5} textAnchor="middle"
+              fontSize={7.5} style={{ fill: "var(--text-dim)" }}>+{i + 1}h</text>
+          ))}
+        </svg>
+      ) : (
+        /* Diverging: each hour vs 24h avg */
+        <svg viewBox={`0 0 ${W_D} ${H_D}`} width={W_D} height={H_D} className="forecast-svg-chart">
+          {/* Axis labels */}
+          <text x={PD.left}      y={H_D - 2} textAnchor="middle" fontSize={7.5} style={{ fill: "var(--text-dim)" }}>LOW</text>
+          <text x={centerX}      y={H_D - 2} textAnchor="middle" fontSize={7.5} style={{ fill: "var(--text-dim)" }}>AVG</text>
+          <text x={W_D - PD.right} y={H_D - 2} textAnchor="middle" fontSize={7.5} style={{ fill: "var(--text-dim)" }}>HIGH</text>
+          {/* Center divider */}
+          <line x1={centerX} y1={PD.top} x2={centerX} y2={H_D - PD.bottom}
+            style={{ stroke: "var(--border)" }} strokeWidth={1} strokeDasharray="3 2" />
+          {forecast.map((f, i) => {
+            const y         = PD.top + i * (BAR_H + 1);
+            const dev       = f.p50 - avg;
+            const barW      = Math.abs(dev) / maxDev * (iW / 2);
+            const barX      = dev >= 0 ? centerX : centerX - barW;
+            const isCurrent = new Date(f.ts).getUTCHours() === nowHour;
+            const col       = isCurrent ? "var(--yellow)" : dev >= 0 ? "var(--blue)" : "var(--text-dim)";
             return (
-              <circle key={i} cx={scaleX(i)} cy={scaleYC(f.p50)} r={3}
-                style={{ fill: "var(--blue)" }} />
+              <g key={i}>
+                <rect x={PD.left} y={y} width={iW} height={BAR_H}
+                  style={{ fill: "var(--surface2)" }} rx={1} />
+                <rect x={barX} y={y} width={Math.max(barW, 1)} height={BAR_H}
+                  style={{ fill: col }} opacity={0.85} rx={1} />
+                {labelIdxs.has(i) && (
+                  <text x={PD.left - 3} y={y + BAR_H / 2 + 3}
+                    textAnchor="end" fontSize={7} style={{ fill: "var(--text-dim)" }}>
+                    +{i + 1}h
+                  </text>
+                )}
+              </g>
             );
           })}
-          {/* X-axis labels */}
-          {xTickIdxs.map(i => (
-            <text key={i} x={scaleX(i)} y={H_C - 4} textAnchor="middle"
-              fontSize={7.5} style={{ fill: "var(--text-dim)" }}>
-              +{i + 1}h
-            </text>
-          ))}
         </svg>
       )}
     </div>
