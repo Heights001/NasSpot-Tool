@@ -16,77 +16,61 @@ function ConfidenceDot({ level }: { level: string }) {
   return <span className={cls} title={`Confidence: ${level}`} />;
 }
 
-// ── Chart view ────────────────────────────────────────────────────────────────
+// ── Chart view — diverging bar ────────────────────────────────────────────────
 
 function HorizonChart({ preds }: { preds: Record<number, MLHorizonPrediction> }) {
-  const W = 280, H = 110;
-  const PAD = { top: 14, right: 16, bottom: 28, left: 36 };
+  const W = 280, H = 88;
+  const PAD = { top: 8, right: 48, bottom: 20, left: 36 };
   const innerW = W - PAD.left - PAD.right;
-  const innerH = H - PAD.top - PAD.bottom;
-
-  const points = HORIZONS.map((h, i) => {
-    const p = preds[h];
-    const prob = p ? p.prob_up : 0.5;
-    const x = PAD.left + (i / (HORIZONS.length - 1)) * innerW;
-    const y = PAD.top + (1 - prob) * innerH;
-    return { x, y, prob, h, p };
-  }).filter(pt => pt.p);
-
-  if (points.length < 2) return null;
-
-  const neutralY = PAD.top + 0.5 * innerH;
-
-  // Build filled area path between line and neutral (50%)
-  const linePoints = points.map(pt => `${pt.x},${pt.y}`).join(" ");
-  const areaPath =
-    `M ${points[0].x},${neutralY} ` +
-    points.map(pt => `L ${pt.x},${pt.y}`).join(" ") +
-    ` L ${points[points.length - 1].x},${neutralY} Z`;
-
-  // Determine dominant direction for fill colour
-  const avgProb = points.reduce((s, p) => s + p.prob, 0) / points.length;
-  const fillCol  = avgProb > 0.52 ? "rgba(34,197,94,0.18)" : avgProb < 0.48 ? "rgba(239,68,68,0.18)" : "rgba(148,163,184,0.12)";
-  const lineCol  = avgProb > 0.52 ? "#22c55e" : avgProb < 0.48 ? "#ef4444" : "#94a3b8";
-
-  // Y-axis ticks: 0%, 50%, 100%
-  const yTicks = [0, 0.5, 1];
+  const BAR_H = 14, BAR_GAP = 10;
+  const centerX = PAD.left + innerW / 2;
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="horizon-chart-svg">
-      {/* Y-axis grid lines + labels */}
-      {yTicks.map(t => {
-        const y = PAD.top + (1 - t) * innerH;
+      {/* X-axis labels: BEAR · 50% · BULL */}
+      <text x={PAD.left} y={H - 4} textAnchor="middle" fontSize={7.5} fill="#444">BEAR</text>
+      <text x={centerX}  y={H - 4} textAnchor="middle" fontSize={7.5} fill="#555">50%</text>
+      <text x={W - PAD.right} y={H - 4} textAnchor="middle" fontSize={7.5} fill="#444">BULL</text>
+
+      {/* Center divider */}
+      <line x1={centerX} y1={PAD.top} x2={centerX} y2={H - 14}
+        stroke="#444" strokeWidth={1} strokeDasharray="3 2" />
+
+      {HORIZONS.map((h, i) => {
+        const p = preds[h];
+        if (!p) return null;
+
+        const prob = p.prob_up;
+        const isBull = p.signal === "bullish";
+        const isBear = p.signal === "bearish";
+        const col = isBull ? "#22c55e" : isBear ? "#ef4444" : "#94a3b8";
+
+        const y = PAD.top + i * (BAR_H + BAR_GAP);
+
+        // Bar extends from centerX toward prob_up direction
+        const barW = Math.abs(prob - 0.5) * innerW;
+        const barX = prob >= 0.5 ? centerX : centerX - barW;
+        const pct = Math.round(prob * 100);
+        const labelX = isBull ? barX + barW + 5 : barX - 5;
+        const labelAnchor = isBull ? "start" : "end";
+
         return (
-          <g key={t}>
-            <line x1={PAD.left} y1={y} x2={PAD.left + innerW} y2={y}
-              stroke={t === 0.5 ? "#444" : "#2a2a2a"} strokeWidth={t === 0.5 ? 1 : 0.5} strokeDasharray={t === 0.5 ? "3 3" : undefined} />
-            <text x={PAD.left - 5} y={y + 3.5} textAnchor="end"
-              fontSize={8} fill="#555">{`${Math.round(t * 100)}%`}</text>
-          </g>
-        );
-      })}
-
-      {/* Filled area */}
-      <path d={areaPath} fill={fillCol} />
-
-      {/* Line */}
-      <polyline points={linePoints} fill="none" stroke={lineCol} strokeWidth={1.5} strokeLinejoin="round" />
-
-      {/* Data points + x labels */}
-      {points.map((pt) => {
-        const isBull = pt.p && pt.p.signal === "bullish";
-        const isBear = pt.p && pt.p.signal === "bearish";
-        const dotCol = isBull ? "#22c55e" : isBear ? "#ef4444" : "#94a3b8";
-        const pct = Math.round(pt.prob * 100);
-        const labelY = pt.y > neutralY ? pt.y - 6 : pt.y + 12;
-        return (
-          <g key={pt.h}>
-            <circle cx={pt.x} cy={pt.y} r={3.5} fill={dotCol} />
-            <text x={pt.x} y={labelY} textAnchor="middle" fontSize={8} fill={dotCol} fontWeight={600}>
-              {pct}%
+          <g key={h}>
+            {/* Row background */}
+            <rect x={PAD.left} y={y} width={innerW} height={BAR_H}
+              fill="#1a1a1a" rx={2} />
+            {/* Diverging bar */}
+            <rect x={barX} y={y} width={Math.max(barW, 1)} height={BAR_H}
+              fill={col} opacity={0.85} rx={2} />
+            {/* Horizon label */}
+            <text x={PAD.left - 5} y={y + BAR_H / 2 + 3.5}
+              textAnchor="end" fontSize={8.5} fill="#666">
+              {HORIZON_LABEL[h]}
             </text>
-            <text x={pt.x} y={H - 6} textAnchor="middle" fontSize={8} fill="#555">
-              {HORIZON_LABEL[pt.h]}
+            {/* Probability label */}
+            <text x={labelX} y={y + BAR_H / 2 + 3.5}
+              textAnchor={labelAnchor} fontSize={8} fill={col} fontWeight={600}>
+              {pct}%
             </text>
           </g>
         );
