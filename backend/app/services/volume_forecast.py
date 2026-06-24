@@ -212,7 +212,7 @@ async def _short_term_vol(
     if not instrument_ids:
         return {}
 
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=2)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=26)
     result = await db.execute(
         select(PriceIntraday.instrument_id, PriceIntraday.volume)
         .where(

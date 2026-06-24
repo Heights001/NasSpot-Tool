@@ -650,6 +650,15 @@ body {
   overflow: visible;
 }
 
+.forecast-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  width: 240px;
+}
+
 .forecast-svg-chart {
   display: block;
   overflow: visible;
